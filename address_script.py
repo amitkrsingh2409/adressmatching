@@ -2,13 +2,16 @@ import copy
 import itertools
 import pandas
 import ast
+import nltk
+from nltk.tokenize import RegexpTokenizer
 
 from fuzzywuzzy import fuzz
 
 threshold = 60
 trade_off = 2
-clusters = {}
+clusters = []
 address_list = []
+tokenizer = RegexpTokenizer(r'\w+')
 
 sample_file = pandas.ExcelFile("Return Address Analysis_v15122016.xlsx")
 sheets = sample_file.sheet_names
@@ -25,9 +28,29 @@ for sheet in sheets:
             except ValueError:
                 continue
             cleaned_value = ''.join(curr_add).encode('ascii', 'ignore').decode('ascii')
-            if cleaned_value not in address_list:
-                address_list.append(cleaned_value)
+            tokenize_data = tokenizer.tokenize(cleaned_value)
+            tokenize_value = ' '.join(sorted(tokenize_data))
+            if tokenize_value not in address_list:
+                address_list.append(tokenize_value)
 unique_addresses = list(set(address_list))
+for address in unique_addresses:
+    if not clusters:
+        clusters.append([address])
+        continue
+    for cluster in clusters:
+        insert_flag = False
+        token_ratio = 0
+        for clus in cluster:
+            token_ratio += fuzz.token_sort_ratio(clus, address)
+        if (token_ratio/len(cluster)) > threshold:
+            insert_flag = True
+            cluster.append(address)
+            break
+    if not insert_flag:
+        clusters.append([address])
+
+# Combinations approach (Slow)
+"""
 address_combinations = itertools.combinations(unique_addresses, 2)
 for address in address_combinations:
     token_ratio = fuzz.token_sort_ratio(address[0], address[1])
@@ -46,3 +69,4 @@ for address in address_combinations:
         else:
             clusters[str(token_ratio)] = [address]
         break
+"""
