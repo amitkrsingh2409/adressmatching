@@ -9,8 +9,7 @@ from fuzzywuzzy import fuzz
 
 threshold = 60
 trade_off = 2
-clusters = []
-address_list = []
+address_set = set()
 tokenizer = RegexpTokenizer(r'\w+')
 
 sample_file = pandas.ExcelFile("Return Address Analysis_v15122016.xlsx")
@@ -30,13 +29,10 @@ for sheet in sheets:
             cleaned_value = ''.join(curr_add).encode('ascii', 'ignore').decode('ascii')
             tokenize_data = tokenizer.tokenize(cleaned_value)
             tokenize_value = ' '.join(sorted(tokenize_data))
-            if tokenize_value not in address_list:
-                address_list.append(tokenize_value)
-unique_addresses = list(set(address_list))
+            address_set.add(tokenize_value)
+unique_addresses = list(address_set)
+clusters = [unique_addresses[0]]
 for address in unique_addresses:
-    if not clusters:
-        clusters.append([address])
-        continue
     for cluster in clusters:
         insert_flag = False
         token_ratio = 0
